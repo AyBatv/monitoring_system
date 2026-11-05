@@ -1,0 +1,57 @@
+DROP TABLE IF EXISTS incidents CASCADE;
+DROP TABLE IF EXISTS metric_values CASCADE;
+DROP TABLE IF EXISTS metrics CASCADE;
+DROP TABLE IF EXISTS servers CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS roles CASCADE;
+
+CREATE TABLE roles (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    description VARCHAR(255)
+);
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    telegram_chat_id VARCHAR(50),
+    is_active INTEGER NOT NULL DEFAULT 1,
+    role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE RESTRICT
+);
+
+CREATE TABLE servers (
+    id SERIAL PRIMARY KEY,
+    hostname VARCHAR(100) NOT NULL UNIQUE,
+    ip_address VARCHAR(45) NOT NULL,
+    os_version VARCHAR(50),
+    status VARCHAR(20) NOT NULL DEFAULT 'Online'
+);
+
+CREATE TABLE metrics (
+    id SERIAL PRIMARY KEY,
+    metric_name VARCHAR(50) NOT NULL,
+    warning_threshold DOUBLE PRECISION NOT NULL,
+    critical_threshold DOUBLE PRECISION NOT NULL,
+    check_interval_sec INTEGER NOT NULL DEFAULT 30,
+    server_id INTEGER NOT NULL REFERENCES servers(id) ON DELETE CASCADE
+);
+
+CREATE TABLE metric_values (
+    id SERIAL PRIMARY KEY,
+    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    value DOUBLE PRECISION NOT NULL,
+    status_code INTEGER DEFAULT 200,
+    metric_id INTEGER NOT NULL REFERENCES metrics(id) ON DELETE CASCADE
+);
+
+CREATE TABLE incidents (
+    id SERIAL PRIMARY KEY,
+    severity VARCHAR(20) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'New',
+    started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    resolved_at TIMESTAMP,
+    downtime_minutes INTEGER,
+    server_id INTEGER NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL
+);
